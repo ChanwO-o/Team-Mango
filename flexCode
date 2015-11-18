@@ -1,7 +1,5 @@
-const int DELAY = 100;
-const int DELAY_KEEP_LIGHT_ON = 1500;
-const int TESTS = 200;
-const int WRONGS = 5;
+const int DELAY = 50;
+const int ITERATIONS = 10;
 
 //Pins for flex sensors
 const int PIN_RIGHT_IN = A0;
@@ -18,19 +16,30 @@ const int PIN_LEFT_TURN_2 = 6;
 const int PIN_LEFT_TURN_3 = 7;
 
 //which sensor to write to serial 1-RightIN 2-RightOut 3-LeftIn 4-LeftOut
-const int SERIAL_WRITE = 3;
+const int SERIAL_WRITE = 4;
 
 //Bounds for turning
-const int SEN_RIGHT_IN = 480;//bounds right arm inside
+const int SEN_RIGHT_IN = 400;//bounds right arm inside
 const int SEN_RIGHT_OUT = 470;//bounds right arm outside
-const int SEN_LEFT_IN = 445; //480;//bounds left arm inside
-const int SEN_LEFT_OUT = 445; //470;//bounds left arm outside
+const int SEN_LEFT_IN = 450; //480;//bounds left arm inside
+const int SEN_LEFT_OUT = 450; //470;//bounds left arm outside
 
 //Bounds for stopping
 const int SEN_STOP_OUT = 480;
 const int SEN_STOP_IN_LOW = 480;
 const int SEN_STOP_IN_HIGH = 530;
 
+//globals for light
+bool rightLight = false;
+int rightInc = 0;
+bool leftLight = false;
+int leftInc = 0;
+bool turnLight = false;
+
+int isLeft; // # of iterations user maintains leftturn gesture
+int notLeft; // 
+int isRight; // # of iterations user maintains rightturn gesture
+int notRight; // 
 
 void setup() {
   // put your setup code here, to run once
@@ -43,84 +52,107 @@ void setup() {
   pinMode(PIN_LEFT_TURN_3, OUTPUT);
 }
 
-void leftSignalLight(int state)
+void leftSignalLight()
 {
-  if(state) {
-    digitalWrite(2, HIGH);
-    delay(DELAY_KEEP_LIGHT_ON);
-    digitalWrite(2, LOW);
-  }
-  else
-    digitalWrite(2, LOW); 
+    if(rightLight) {
+      if (rightInc >= 0 && rightInc < 10) {
+        digitalWrite(PIN_RIGHT_TURN_1, HIGH);
+        digitalWrite(PIN_RIGHT_TURN_2, LOW);
+        digitalWrite(PIN_RIGHT_TURN_3, LOW);
+      } else if (rightInc >= 10, rightInc < 20) {
+        digitalWrite(PIN_RIGHT_TURN_1, LOW);
+        digitalWrite(PIN_RIGHT_TURN_2, HIGH);
+        digitalWrite(PIN_RIGHT_TURN_3, LOW);
+      } else if (rightInc >= 20, rightInc < 30) {
+        digitalWrite(PIN_RIGHT_TURN_1, LOW);
+        digitalWrite(PIN_RIGHT_TURN_2, LOW);
+        digitalWrite(PIN_RIGHT_TURN_3, HIGH); 
+      } else {
+        rightInc = 0;
+      }
+      rightInc++;
+    }else{
+      rightInc = 0;
+        digitalWrite(PIN_RIGHT_TURN_1, LOW);
+        digitalWrite(PIN_RIGHT_TURN_2, LOW);
+        digitalWrite(PIN_RIGHT_TURN_3, LOW); 
+    }
 }
 
-void rightSignalLight(int state)
+void rightSignalLight()
 {
-  if(state)
-    digitalWrite(4, HIGH);
-  else
-    digitalWrite(4, LOW);
+    if(leftLight) {
+      if (leftInc >= 0 && leftInc < 10) {
+        digitalWrite(PIN_LEFT_TURN_1, HIGH);
+        digitalWrite(PIN_LEFT_TURN_2, LOW);
+        digitalWrite(PIN_LEFT_TURN_3, LOW);
+      } else if (leftInc >= 10, leftInc < 20) {
+        digitalWrite(PIN_LEFT_TURN_1, LOW);
+        digitalWrite(PIN_LEFT_TURN_2, HIGH);
+        digitalWrite(PIN_LEFT_TURN_3, LOW);
+      } else if (leftInc >= 20, leftInc < 30) {
+        digitalWrite(PIN_LEFT_TURN_1, LOW);
+        digitalWrite(PIN_LEFT_TURN_2, LOW);
+        digitalWrite(PIN_LEFT_TURN_3, HIGH); 
+      } else {
+        leftInc = 0;
+      }
+      leftInc++;
+    }else{
+        digitalWrite(PIN_LEFT_TURN_1, LOW);
+        digitalWrite(PIN_LEFT_TURN_2, LOW);
+        digitalWrite(PIN_LEFT_TURN_3, LOW); 
+      leftInc = 0;
+    }
 }
 
-void stopSignalLight(int state)
+void stopSignalLight()
 {
-  if(state)
-    digitalWrite(3, HIGH);
-  else
-    digitalWrite(3, LOW);
+  
 }
 
 void testLeft(int sensLeftIn, int sensLeftOut)
 {
-  //Left turn light on
-  if(sensLeftIn < SEN_LEFT_IN && sensLeftOut > SEN_LEFT_OUT && sensLeftIn > 420) {
-    //leftSignalLight(1);
-
-    
-    int wrong = 0;
-    for (int i = 0; i < TESTS; i++) {
-      sensLeftIn = analogRead(PIN_LEFT_IN);
-      sensLeftOut = analogRead(PIN_LEFT_OUT);
-
-      if(!(sensLeftIn < SEN_LEFT_IN && sensLeftOut > SEN_LEFT_OUT && sensLeftIn > 420)) {
-        wrong++;
-        Serial.print("wrong: ");
-        Serial.println(wrong);
-        if (wrong >= 50) {
-          Serial.println("BREAK");
-          break;
-        }
-      }
-    }
-    
-    if (wrong < WRONGS) { leftSignalLight(1); Serial.println("light"); }
-    
+  Serial.println(isLeft);
+ if(sensLeftIn < SEN_LEFT_IN && sensLeftOut > SEN_LEFT_OUT) {
+    isLeft++;
+  } else {
+    isLeft = 0;
   }
-//  else
-//    leftSignalLight(0);
+
+  if (isLeft > ITERATIONS)
+    leftLight = true;
+   else
+    leftLight = false;    
 }
 
 void testRight(int sensRightIn, int sensRightOut)
 {
-  //Right turn light on
-  if(sensRightIn < SEN_RIGHT_IN && sensRightOut > SEN_RIGHT_OUT)
-    rightSignalLight(1);
-  else
-    rightSignalLight(0);
+ if(sensRightIn < SEN_RIGHT_IN && sensRightOut > SEN_RIGHT_OUT) {
+    isRight++;
+  } else {
+    isRight = 0;
+  }
 
+  if (isRight > ITERATIONS)
+    rightLight = true;
+   else
+    rightLight = false;    
 }
 
 void testStop(int sensLeftIn, int sensLeftOut)
 {
   if (sensLeftOut > SEN_STOP_OUT && sensLeftIn < SEN_STOP_IN_HIGH && sensLeftIn > SEN_STOP_IN_LOW)
-    stopSignalLight(1);
+    stopSignalLight();
   else
-    stopSignalLight(0);
+    stopSignalLight();
 }
 
 void serialWrite(int select, int sensRightIn, int sensRightOut, int sensLeftIn, int sensLeftOut)
 {
   switch(select) {
+    case 0:
+      break;
     case 1:
       Serial.println(sensRightIn);
       break;
@@ -143,21 +175,24 @@ void loop() {
   int sensRightOut;
   int sensLeftIn;
   int sensLeftOut;
-
-  digitalWrite(5, HIGH);
-
   
   while(1)
   {
+    //Reading Data from 4 Flex sensors
     sensRightIn = analogRead(PIN_RIGHT_IN);
     sensRightOut = analogRead(PIN_RIGHT_OUT);
     sensLeftIn = analogRead(PIN_LEFT_IN);
     sensLeftOut = analogRead(PIN_LEFT_OUT);
 
+    //Lights
+    leftSignalLight();
+    rightSignalLight();
+    stopSignalLight();
+
     serialWrite(SERIAL_WRITE, sensRightIn, sensRightOut, sensLeftIn, sensLeftOut);
     delay(DELAY);
 
-    //testRight(sensRightIn, sensRightOut);
+    testRight(sensRightIn, sensRightOut);
     testLeft(sensLeftIn, sensLeftOut);
     //testStop(sensLeftIn, sensLeftOut);
   }
