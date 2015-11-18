@@ -1,7 +1,7 @@
 const int DELAY = 100;
 const int DELAY_KEEP_LIGHT_ON = 1500;
 const int TESTS = 200;
-const int WRONGS = 5;
+const int ITERATIONS = 50;
 
 //Pins for flex sensors
 const int PIN_RIGHT_IN = A0;
@@ -31,6 +31,11 @@ const int SEN_STOP_OUT = 480;
 const int SEN_STOP_IN_LOW = 480;
 const int SEN_STOP_IN_HIGH = 530;
 
+int isLeft; // # of iterations user maintains leftturn gesture
+int notLeft; // 
+int isRight; // # of iterations user maintains rightturn gesture
+int notRight; // 
+
 
 void setup() {
   // put your setup code here, to run once
@@ -47,11 +52,12 @@ void leftSignalLight(int state)
 {
   if(state) {
     digitalWrite(2, HIGH);
-    delay(DELAY_KEEP_LIGHT_ON);
-    digitalWrite(2, LOW);
+    Serial.println("ON");
   }
-  else
-    digitalWrite(2, LOW); 
+  else {
+    Serial.println("OFF");
+    digitalWrite(2, LOW);
+  } 
 }
 
 void rightSignalLight(int state)
@@ -72,32 +78,21 @@ void stopSignalLight(int state)
 
 void testLeft(int sensLeftIn, int sensLeftOut)
 {
-  //Left turn light on
-  if(sensLeftIn < SEN_LEFT_IN && sensLeftOut > SEN_LEFT_OUT && sensLeftIn > 420) {
-    //leftSignalLight(1);
-
-    
-    int wrong = 0;
-    for (int i = 0; i < TESTS; i++) {
-      sensLeftIn = analogRead(PIN_LEFT_IN);
-      sensLeftOut = analogRead(PIN_LEFT_OUT);
-
-      if(!(sensLeftIn < SEN_LEFT_IN && sensLeftOut > SEN_LEFT_OUT && sensLeftIn > 420)) {
-        wrong++;
-        Serial.print("wrong: ");
-        Serial.println(wrong);
-        if (wrong >= 50) {
-          Serial.println("BREAK");
-          break;
-        }
-      }
-    }
-    
-    if (wrong < WRONGS) { leftSignalLight(1); Serial.println("light"); }
-    
+//  Serial.println(isLeft);
+//  Serial.println(notLeft);
+  if(sensLeftIn < SEN_LEFT_IN && sensLeftOut > SEN_LEFT_OUT) {
+    isLeft++;
+    notLeft = 0;
   }
-//  else
-//    leftSignalLight(0);
+  else {
+    notLeft++;
+    isLeft = 0;
+  }
+
+  if (isLeft > ITERATIONS)
+    leftSignalLight(1);
+  if (notLeft > ITERATIONS)
+    leftSignalLight(0);    
 }
 
 void testRight(int sensRightIn, int sensRightOut)
@@ -161,3 +156,4 @@ void loop() {
     testLeft(sensLeftIn, sensLeftOut);
     //testStop(sensLeftIn, sensLeftOut);
   }
+}
