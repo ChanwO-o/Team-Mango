@@ -55,8 +55,8 @@ void leftSignalLight(int state)
     Serial.println("ON");
   }
   else {
-    Serial.println("OFF");
     digitalWrite(2, LOW);
+    Serial.println("OFF");
   } 
 }
 
@@ -92,17 +92,24 @@ void testLeft(int sensLeftIn, int sensLeftOut)
   if (isLeft > ITERATIONS)
     leftSignalLight(1);
   if (notLeft > ITERATIONS)
-    leftSignalLight(0);    
+    leftSignalLight(0);  
 }
 
 void testRight(int sensRightIn, int sensRightOut)
 {
-  //Right turn light on
-  if(sensRightIn < SEN_RIGHT_IN && sensRightOut > SEN_RIGHT_OUT)
-    rightSignalLight(1);
-  else
-    rightSignalLight(0);
+  if(sensRightIn < SEN_RIGHT_IN && sensRightOut > SEN_RIGHT_OUT) {
+    isRight++;
+    notRight = 0;
+  }
+  else {
+    notRight++;
+    isRight = 0;
+  }
 
+  if (isRight > ITERATIONS)
+    rightSignalLight(1);
+  if (notRight > ITERATIONS)
+    rightSignalLight(0);  
 }
 
 void testStop(int sensLeftIn, int sensLeftOut)
@@ -152,7 +159,7 @@ void loop() {
     serialWrite(SERIAL_WRITE, sensRightIn, sensRightOut, sensLeftIn, sensLeftOut);
     delay(DELAY);
 
-    //testRight(sensRightIn, sensRightOut);
+    testRight(sensRightIn, sensRightOut);
     testLeft(sensLeftIn, sensLeftOut);
     //testStop(sensLeftIn, sensLeftOut);
   }
